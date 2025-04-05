@@ -1,0 +1,167 @@
+@model IEnumerable<SchoolManagementSystem.Models.Student>
+@{
+    ViewData["Title"] = "Enter Marks";
+    var exam = ViewData["Exam"] as SchoolManagementSystem.Models.Exam;
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Enter Marks</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Exams</a></li>
+        <li class="breadcrumb-item active">Enter Marks</li>
+    </ol>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-clipboard-check me-1"></i>
+            Exam Details
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th>Exam Title:</th>
+                            <td>@exam.Title</td>
+                        </tr>
+                        <tr>
+                            <th>Class:</th>
+                            <td>@exam.Class.Name</td>
+                        </tr>
+                        <tr>
+                            <th>Subject:</th>
+                            <td>@(exam.Subject?.Name ?? "All Subjects")</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th>Exam Date:</th>
+                            <td>@exam.ExamDate.ToShortDateString()</td>
+                        </tr>
+                        <tr>
+                            <th>Timing:</th>
+                            <td>@exam.StartTime.ToString("hh:mm tt") - @exam.EndTime.ToString("hh:mm tt")</td>
+                        </tr>
+                        <tr>
+                            <th>Total Marks:</th>
+                            <td>@exam.TotalMarks</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    @if (Model.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-users me-1"></i>
+                Student Marks
+            </div>
+            <div class="card-body">
+                <form asp-action="SaveMarks" method="post">
+                    <input type="hidden" name="examId" value="@exam.Id" />
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="marksTable">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Admission No</th>
+                                    <th width="150">Marks (out of @exam.TotalMarks)</th>
+                                    <th width="150">Grade</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var student in Model)
+                                {
+                                    var result = student.ExamResults.FirstOrDefault();
+                                    var marks = result?.MarksObtained ?? 0;
+                                    var grade = result?.Grade ?? "";
+                                    var remarks = result?.Remarks ?? "";
+                                    
+                                    <tr>
+                                        <td>@student.User.FirstName @student.User.LastName</td>
+                                        <td>@student.AdmissionNumber</td>
+                                        <td>
+                                            <input type="hidden" name="studentIds" value="@student.Id" />
+                                            <input type="number" name="marks" value="@marks" min="0" max="@exam.TotalMarks" step="0.5" class="form-control marks-input" data-student-id="@student.Id" />
+                                        </td>
+                                        <td>
+                                            <select name="grades" class="form-control grade-select" data-student-id="@student.Id">
+                                                <option value="" @(grade == "" ? "selected" : "")>-- Select --</option>
+                                                <option value="A+" @(grade == "A+" ? "selected" : "")>A+</option>
+                                                <option value="A" @(grade == "A" ? "selected" : "")>A</option>
+                                                <option value="B+" @(grade == "B+" ? "selected" : "")>B+</option>
+                                                <option value="B" @(grade == "B" ? "selected" : "")>B</option>
+                                                <option value="C+" @(grade == "C+" ? "selected" : "")>C+</option>
+                                                <option value="C" @(grade == "C" ? "selected" : "")>C</option>
+                                                <option value="D" @(grade == "D" ? "selected" : "")>D</option>
+                                                <option value="F" @(grade == "F" ? "selected" : "")>F</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text" name="remarks" value="@remarks" class="form-control" placeholder="Optional remarks" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i> Save Marks
+                        </button>
+                        <a asp-action="Details" asp-route-id="@exam.Id" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Back to Exam Details
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No students found in this class.
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Auto-fill grade based on marks
+            $('.marks-input').change(function() {
+                var marks = parseFloat($(this).val());
+                var totalMarks = @exam.TotalMarks;
+                var percentage = (marks / totalMarks) * 100;
+                var studentId = $(this).data('student-id');
+                var gradeSelect = $('.grade-select[data-student-id="' + studentId + '"]');
+                
+                var grade = '';
+                if (percentage >= 90) grade = 'A+';
+                else if (percentage >= 80) grade = 'A';
+                else if (percentage >= 70) grade = 'B+';
+                else if (percentage >= 60) grade = 'B';
+                else if (percentage >= 50) grade = 'C+';
+                else if (percentage >= 40) grade = 'C';
+                else if (percentage >= 33) grade = 'D';
+                else grade = 'F';
+                
+                gradeSelect.val(grade);
+            });
+        });
+    </script>
+} 

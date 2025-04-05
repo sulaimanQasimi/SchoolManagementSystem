@@ -1,0 +1,190 @@
+@model IEnumerable<SchoolManagementSystem.Models.Timetable>
+@{
+    ViewData["Title"] = "Timetable";
+    var isAdmin = User.IsInRole("Admin");
+    
+    // Group timetable entries by day of week
+    var timetableByDay = Model.GroupBy(t => t.DayOfWeek).ToDictionary(g => g.Key, g => g.ToList());
+    
+    string[] daysOfWeek = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+    
+    // Generate time slots (8 AM to 4 PM with 1-hour intervals)
+    var timeSlots = new List<TimeSpan>();
+    for (int hour = 8; hour <= 16; hour++)
+    {
+        timeSlots.Add(new TimeSpan(hour, 0, 0));
+    }
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Timetable</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item active">Timetable</li>
+    </ol>
+    
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div><i class="fas fa-calendar-alt me-1"></i> Class Timetable</div>
+            @if (isAdmin)
+            {
+                <a asp-action="Create" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i> Add New Slot
+                </a>
+            }
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Class</label>
+                    <select id="classSelector" class="form-control" asp-items="ViewBag.Classes">
+                        <option value="">-- Select Class --</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Section</label>
+                    <select id="sectionSelector" class="form-control" asp-items="ViewBag.Sections">
+                        <option value="">-- Select Section --</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button id="loadTimetable" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> Load Timetable
+                    </button>
+                </div>
+            </div>
+            
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="timetableGrid">
+                        <thead>
+                            <tr class="bg-light">
+                                <th width="100">Time</th>
+                                @foreach (var day in daysOfWeek)
+                                {
+                                    <th>@day</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var timeSlot in timeSlots)
+                            {
+                                <tr>
+                                    <td class="bg-light fw-bold">
+                                        @timeSlot.ToString(@"hh\:mm tt")
+                                    </td>
+                                    @foreach (var day in daysOfWeek)
+                                    {
+                                        int dayIndex = Array.IndexOf(daysOfWeek, day) + 1;
+                                        var daySchedule = timetableByDay.ContainsKey(dayIndex) ? timetableByDay[dayIndex] : new List<Timetable>();
+                                        var currentSlot = daySchedule.FirstOrDefault(t => 
+                                            t.StartTime <= timeSlot && 
+                                            t.EndTime > timeSlot);
+                                            
+                                        if (currentSlot != null)
+                                        {
+                                            // Calculate if this is the first row for this entry
+                                            bool isFirstRow = currentSlot.StartTime.Hours == timeSlot.Hours && 
+                                                           currentSlot.StartTime.Minutes == timeSlot.Minutes;
+                                                           
+                                            // Calculate rowspan based on duration
+                                            int hours = currentSlot.EndTime.Hours - timeSlot.Hours;
+                                            if (currentSlot.EndTime.Minutes > 0 && timeSlot.Minutes == 0)
+                                            {
+                                                hours += 1;
+                                            }
+                                            
+                                            if (isFirstRow)
+                                            {
+                                                <td class="bg-info bg-opacity-25" rowspan="@hours">
+                                                    <div class="fw-bold">@currentSlot.Subject?.Name</div>
+                                                    <div class="small">@currentSlot.StartTime.ToString(@"hh\:mm tt") - @currentSlot.EndTime.ToString(@"hh\:mm tt")</div>
+                                                    <div>@(currentSlot.Teacher?.User?.FirstName ?? "") @(currentSlot.Teacher?.User?.LastName ?? "")</div>
+                                                    @if (isAdmin)
+                                                    {
+                                                        <div class="mt-2">
+                                                            <a asp-action="Edit" asp-route-id="@currentSlot.Id" class="btn btn-primary btn-sm">
+                                                                <i class="fas fa-edit"></i>
+                                                            </a>
+                                                            <a asp-action="Delete" asp-route-id="@currentSlot.Id" class="btn btn-danger btn-sm">
+                                                                <i class="fas fa-trash"></i>
+                                                            </a>
+                                                        </div>
+                                                    }
+                                                </td>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // Check if this cell is part of a rowspan from a previous row
+                                            bool isPartOfRowspan = false;
+                                            foreach (var slot in daySchedule)
+                                            {
+                                                if (slot.StartTime < timeSlot && slot.EndTime > timeSlot)
+                                                {
+                                                    isPartOfRowspan = true;
+                                                    break;
+                                                }
+                                            }
+                                            
+                                            if (!isPartOfRowspan)
+                                            {
+                                                <td></td>
+                                            }
+                                        }
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Please select a class and section to view the timetable.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Load sections when class changes
+            $('#classSelector').change(function() {
+                var classId = $(this).val();
+                if (classId) {
+                    $.getJSON('@Url.Action("GetSections")', { classId: classId }, function(data) {
+                        var sections = $('#sectionSelector');
+                        sections.empty();
+                        sections.append($('<option></option>').val('').text('-- Select Section --'));
+                        $.each(data, function(i, section) {
+                            sections.append($('<option></option>').val(section.id).text(section.name));
+                        });
+                    });
+                } else {
+                    $('#sectionSelector').empty();
+                    $('#sectionSelector').append($('<option></option>').val('').text('-- Select Section --'));
+                }
+            });
+            
+            // Load timetable button click
+            $('#loadTimetable').click(function() {
+                var classId = $('#classSelector').val();
+                var sectionId = $('#sectionSelector').val();
+                
+                if (classId) {
+                    window.location.href = '@Url.Action("Index")' + 
+                        '?classId=' + classId + 
+                        (sectionId ? '&sectionId=' + sectionId : '');
+                } else {
+                    alert('Please select a class.');
+                }
+            });
+        });
+    </script>
+} 

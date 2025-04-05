@@ -1,0 +1,148 @@
+@model SchoolManagementSystem.Models.Timetable
+@{
+    ViewData["Title"] = "Add Timetable Entry";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Add Timetable Entry</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Timetable</a></li>
+        <li class="breadcrumb-item active">Add New</li>
+    </ol>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-plus me-1"></i>
+            New Timetable Entry
+        </div>
+        <div class="card-body">
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 class="mb-3">Class Information</h4>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="ClassId" class="form-label">Class</label>
+                            <select asp-for="ClassId" class="form-control" asp-items="ViewBag.ClassId">
+                                <option value="">-- Select Class --</option>
+                            </select>
+                            <span asp-validation-for="ClassId" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="SectionId" class="form-label">Section</label>
+                            <select asp-for="SectionId" class="form-control">
+                                <option value="">-- Select Section --</option>
+                            </select>
+                            <span asp-validation-for="SectionId" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="SubjectId" class="form-label">Subject</label>
+                            <select asp-for="SubjectId" class="form-control">
+                                <option value="">-- Select Subject --</option>
+                            </select>
+                            <span asp-validation-for="SubjectId" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="TeacherId" class="form-label">Teacher</label>
+                            <select asp-for="TeacherId" class="form-control" asp-items="ViewBag.TeacherId">
+                                <option value="">-- Select Teacher --</option>
+                            </select>
+                            <span asp-validation-for="TeacherId" class="text-danger"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h4 class="mb-3">Schedule Information</h4>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="DayOfWeek" class="form-label"></label>
+                            <select asp-for="DayOfWeek" class="form-control">
+                                <option value="">-- Select Day --</option>
+                                <option value="1">Monday</option>
+                                <option value="2">Tuesday</option>
+                                <option value="3">Wednesday</option>
+                                <option value="4">Thursday</option>
+                                <option value="5">Friday</option>
+                                <option value="6">Saturday</option>
+                            </select>
+                            <span asp-validation-for="DayOfWeek" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="StartTime" class="form-label"></label>
+                            <input asp-for="StartTime" class="form-control" type="time" />
+                            <span asp-validation-for="StartTime" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="EndTime" class="form-label"></label>
+                            <input asp-for="EndTime" class="form-control" type="time" />
+                            <span asp-validation-for="EndTime" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="Room" class="form-label"></label>
+                            <input asp-for="Room" class="form-control" />
+                            <span asp-validation-for="Room" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Create
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to List
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function() {
+            // Load sections when class changes
+            $('#ClassId').change(function() {
+                var classId = $(this).val();
+                if (classId) {
+                    // Load sections
+                    $.getJSON('@Url.Action("GetSections")', { classId: classId }, function(data) {
+                        var sections = $('#SectionId');
+                        sections.empty();
+                        sections.append($('<option></option>').val('').text('-- Select Section --'));
+                        $.each(data, function(i, section) {
+                            sections.append($('<option></option>').val(section.id).text(section.name));
+                        });
+                    });
+                    
+                    // Load subjects
+                    $.getJSON('@Url.Action("GetSubjects")', { classId: classId }, function(data) {
+                        var subjects = $('#SubjectId');
+                        subjects.empty();
+                        subjects.append($('<option></option>').val('').text('-- Select Subject --'));
+                        $.each(data, function(i, subject) {
+                            subjects.append($('<option></option>').val(subject.id).text(subject.name));
+                        });
+                    });
+                } else {
+                    $('#SectionId').empty();
+                    $('#SectionId').append($('<option></option>').val('').text('-- Select Section --'));
+                    
+                    $('#SubjectId').empty();
+                    $('#SubjectId').append($('<option></option>').val('').text('-- Select Subject --'));
+                }
+            });
+        });
+    </script>
+} 
