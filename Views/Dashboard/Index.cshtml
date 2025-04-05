@@ -1,0 +1,244 @@
+@model SchoolManagementSystem.Models.Dashboard
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Dashboard";
+    var user = await UserManager.GetUserAsync(User);
+    var userRoles = await UserManager.GetRolesAsync(user);
+}
+
+<div class="container-fluid px-4 py-3">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-primary">Welcome, @user.FirstName @user.LastName</h2>
+            <p class="text-muted">@string.Join(", ", userRoles) Dashboard</p>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Students</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalStudents</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Teachers</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalTeachers</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Classes</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalClasses</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-school fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Parents</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalParents</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-friends fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Upcoming Exams -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Upcoming Exams</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.UpcomingExams.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Exam</th>
+                                        <th>Subject</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var exam in Model.UpcomingExams)
+                                    {
+                                        <tr>
+                                            <td>@exam.Title</td>
+                                            <td>@(exam.Subject?.Name ?? "All Subjects")</td>
+                                            <td>@exam.ExamDate.ToShortDateString()</td>
+                                            <td>@exam.StartTime.ToString("hh:mm tt") - @exam.EndTime.ToString("hh:mm tt")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-center">No upcoming exams.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Notifications -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Notifications</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.RecentNotifications.Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var notification in Model.RecentNotifications)
+                            {
+                                <a href="#" class="list-group-item list-group-item-action flex-column align-items-start">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">@notification.Title</h5>
+                                        <small>@((DateTime.Now - notification.CreatedAt).TotalDays < 1 ? 
+                                            "Today" : 
+                                            notification.CreatedAt.ToShortDateString())</small>
+                                    </div>
+                                    <p class="mb-1">@notification.Message</p>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-center">No notifications available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role Specific Content -->
+    @if (userRoles.Contains("Teacher"))
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">My Classes</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.TeacherClasses.Any())
+                        {
+                            <div class="row">
+                                @foreach (var cls in Model.TeacherClasses)
+                                {
+                                    <div class="col-md-3 col-sm-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-body text-center">
+                                                <h5 class="card-title">@cls.Name</h5>
+                                                <p class="card-text">@cls.Students?.Count() students</p>
+                                                <a href="#" class="btn btn-primary btn-sm">View Details</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-center">No classes assigned yet.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (userRoles.Contains("Parent"))
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">My Children</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.ParentStudents.Any())
+                        {
+                            <div class="row">
+                                @foreach (var student in Model.ParentStudents)
+                                {
+                                    <div class="col-md-4 col-sm-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">@(await UserManager.FindByIdAsync(student.UserId)).FirstName @(await UserManager.FindByIdAsync(student.UserId)).LastName</h5>
+                                                <p class="card-text">Class: @student.Class?.Name - Section: @student.Section?.Name</p>
+                                                <p class="card-text">Admission No: @student.AdmissionNumber</p>
+                                                <a href="#" class="btn btn-primary btn-sm">View Details</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-center">No children registered yet.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Any dashboard-specific scripts
+        });
+    </script>
+} 

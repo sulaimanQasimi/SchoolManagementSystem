@@ -1,0 +1,180 @@
+@model IEnumerable<SchoolManagementSystem.Models.Student>
+@{
+    ViewData["Title"] = "Mark Attendance";
+    var date = ViewData["Date"] as string ?? DateTime.Today.ToString("yyyy-MM-dd");
+    var formattedDate = DateTime.Parse(date).ToString("dd MMM yyyy");
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Mark Attendance</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Attendance</a></li>
+        <li class="breadcrumb-item active">Mark Attendance</li>
+    </ol>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-calendar-check me-1"></i>
+            Select Class and Date
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Class</label>
+                        <select id="classSelector" class="form-control" asp-items="ViewBag.Classes">
+                            <option value="">-- Select Class --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Section</label>
+                        <select id="sectionSelector" class="form-control" asp-items="ViewBag.Sections">
+                            <option value="">-- Select Section --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" id="dateSelector" class="form-control" value="@date" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3 d-flex align-items-end">
+                        <button id="loadStudents" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i> Load Students
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    @if (Model.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-clipboard-list me-1"></i>
+                Mark Attendance for @formattedDate
+            </div>
+            <div class="card-body">
+                <form asp-action="SaveAttendance" method="post">
+                    <input type="hidden" name="date" value="@date" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Remarks</label>
+                        <textarea name="remarks" class="form-control" rows="2" placeholder="Optional: Add any general remarks about today's attendance"></textarea>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="attendanceTable">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Admission Number</th>
+                                    <th width="150">Attendance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var student in Model)
+                                {
+                                    var attendance = student.Attendances.FirstOrDefault();
+                                    var isPresent = attendance?.IsPresent ?? true;
+                                    
+                                    <tr>
+                                        <td>@student.User.FirstName @student.User.LastName</td>
+                                        <td>@student.AdmissionNumber</td>
+                                        <td>
+                                            <input type="hidden" name="studentIds" value="@student.Id" />
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="isPresent[@(Model.ToList().IndexOf(student))]" 
+                                                       id="present_@student.Id" value="true" @(isPresent ? "checked" : "") />
+                                                <label class="form-check-label text-success" for="present_@student.Id">Present</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="isPresent[@(Model.ToList().IndexOf(student))]" 
+                                                       id="absent_@student.Id" value="false" @(!isPresent ? "checked" : "") />
+                                                <label class="form-check-label text-danger" for="absent_@student.Id">Absent</label>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i> Save Attendance
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+    else if (ViewBag.Classes != null && ViewBag.Classes.Count() > 0)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Please select a class and date to load students.
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No classes found. Please add classes and students before marking attendance.
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Load sections when class changes
+            $('#classSelector').change(function () {
+                var classId = $(this).val();
+                if (classId) {
+                    $.getJSON('@Url.Action("GetSections")', { classId: classId }, function (data) {
+                        var sections = $('#sectionSelector');
+                        sections.empty();
+                        sections.append($('<option></option>').val('').text('-- Select Section --'));
+                        $.each(data, function (i, section) {
+                            sections.append($('<option></option>').val(section.id).text(section.name));
+                        });
+                    });
+                } else {
+                    $('#sectionSelector').empty();
+                    $('#sectionSelector').append($('<option></option>').val('').text('-- Select Section --'));
+                }
+            });
+
+            // Load students button click
+            $('#loadStudents').click(function () {
+                var classId = $('#classSelector').val();
+                var sectionId = $('#sectionSelector').val();
+                var date = $('#dateSelector').val();
+                
+                if (classId) {
+                    window.location.href = '@Url.Action("MarkAttendance")' + 
+                        '?classId=' + classId + 
+                        (sectionId ? '&sectionId=' + sectionId : '') + 
+                        '&date=' + date;
+                } else {
+                    alert('Please select a class first.');
+                }
+            });
+        });
+    </script>
+}

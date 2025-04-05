@@ -1,0 +1,131 @@
+@model SchoolManagementSystem.Models.Student
+
+@{
+    ViewData["Title"] = "Add Student";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Add New Student</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Students</a></li>
+        <li class="breadcrumb-item active">Add New</li>
+    </ol>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-user-plus me-1"></i>
+            Student Information
+        </div>
+        <div class="card-body">
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 class="mb-3">Personal Information</h4>
+                        
+                        <div class="form-group mb-3">
+                            <label class="form-label">First Name</label>
+                            <input name="firstName" class="form-control" required />
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input name="lastName" class="form-control" required />
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label class="form-label">Date of Birth</label>
+                            <input type="date" name="dateOfBirth" class="form-control" required />
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" required />
+                            <span class="text-muted">This will be the login username</span>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required />
+                            <span class="text-muted">Minimum 8 characters with uppercase, lowercase, number and special character</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h4 class="mb-3">Academic Information</h4>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="AdmissionNumber" class="form-label"></label>
+                            <input asp-for="AdmissionNumber" class="form-control" required />
+                            <span asp-validation-for="AdmissionNumber" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="EnrollmentDate" class="form-label"></label>
+                            <input asp-for="EnrollmentDate" class="form-control" type="date" required />
+                            <span asp-validation-for="EnrollmentDate" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="ClassId" class="form-label">Class</label>
+                            <select asp-for="ClassId" asp-items="ViewBag.ClassId" class="form-control">
+                                <option value="">-- Select Class --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="SectionId" class="form-label">Section</label>
+                            <select asp-for="SectionId" class="form-control">
+                                <option value="">-- Select Section --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label asp-for="ParentId" class="form-label">Parent</label>
+                            <select asp-for="ParentId" asp-items="ViewBag.ParentId" class="form-control">
+                                <option value="">-- Select Parent --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Create
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to List
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function() {
+            // Load sections when class changes
+            $('#ClassId').change(function() {
+                var classId = $(this).val();
+                if (classId) {
+                    $.getJSON('@Url.Action("GetSections")', { classId: classId }, function(data) {
+                        var sections = $('#SectionId');
+                        sections.empty();
+                        sections.append($('<option></option>').val('').text('-- Select Section --'));
+                        $.each(data, function(i, section) {
+                            sections.append($('<option></option>').val(section.id).text(section.name));
+                        });
+                    });
+                } else {
+                    $('#SectionId').empty();
+                    $('#SectionId').append($('<option></option>').val('').text('-- Select Section --'));
+                }
+            });
+        });
+    </script>
+} 

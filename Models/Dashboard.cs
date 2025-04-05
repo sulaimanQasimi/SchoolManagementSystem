@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SchoolManagementSystem.Models
 {
-    public class DashboardViewModel
+    public class Dashboard
     {
         public int TotalStudents { get; set; }
         
@@ -25,5 +25,11 @@ namespace SchoolManagementSystem.Models
         public IEnumerable<Exam> UpcomingExams { get; set; } = new List<Exam>();
         
         public IEnumerable<Notification> RecentNotifications { get; set; } = new List<Notification>();
+        
+        // For Teacher Role
+        public IEnumerable<Class> TeacherClasses { get; set; } = new List<Class>();
+        
+        // For Parent Role
+        public IEnumerable<Student> ParentStudents { get; set; } = new List<Student>();
     }
 } 
