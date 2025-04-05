@@ -1,0 +1,128 @@
+@model SchoolManagementSystem.Models.Notification
+
+@{
+    ViewData["Title"] = "Create Notification";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Create Notification</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Notifications</a></li>
+        <li class="breadcrumb-item active">Create</li>
+    </ol>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-bell me-1"></i>
+            New Notification
+        </div>
+        <div class="card-body">
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                
+                <div class="form-group mb-3">
+                    <label asp-for="Title" class="form-label"></label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label asp-for="Message" class="form-label"></label>
+                    <textarea asp-for="Message" class="form-control" rows="5"></textarea>
+                    <span asp-validation-for="Message" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label class="form-label">Recipients</label>
+                    <select id="recipientType" name="recipientType" class="form-control">
+                        <option value="All">All Users</option>
+                        <option value="Students">All Students</option>
+                        <option value="Teachers">All Teachers</option>
+                        <option value="Parents">All Parents</option>
+                        <option value="Class">Specific Class</option>
+                        <option value="Section">Specific Section</option>
+                    </select>
+                </div>
+                
+                <div id="classSection" class="d-none">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Class</label>
+                                <select id="classId" name="classId" class="form-control" asp-items="ViewBag.Classes">
+                                    <option value="">-- Select Class --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="sectionDiv" class="col-md-6 d-none">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Section</label>
+                                <select id="sectionId" name="sectionId" class="form-control">
+                                    <option value="">-- Select Section --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <div class="form-check">
+                        <input asp-for="IsImportant" class="form-check-input" />
+                        <label asp-for="IsImportant" class="form-check-label">Mark as Important</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-1"></i> Send Notification
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to List
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function() {
+            // Handle recipient type change
+            $('#recipientType').change(function() {
+                var selectedType = $(this).val();
+                
+                if (selectedType === 'Class' || selectedType === 'Section') {
+                    $('#classSection').removeClass('d-none');
+                    
+                    if (selectedType === 'Section') {
+                        $('#sectionDiv').removeClass('d-none');
+                    } else {
+                        $('#sectionDiv').addClass('d-none');
+                    }
+                } else {
+                    $('#classSection').addClass('d-none');
+                    $('#sectionDiv').addClass('d-none');
+                }
+            });
+            
+            // Load sections when class changes
+            $('#classId').change(function() {
+                var classId = $(this).val();
+                if (classId && $('#recipientType').val() === 'Section') {
+                    $.getJSON('@Url.Action("GetSections")', { classId: classId }, function(data) {
+                        var sections = $('#sectionId');
+                        sections.empty();
+                        sections.append($('<option></option>').val('').text('-- Select Section --'));
+                        $.each(data, function(i, section) {
+                            sections.append($('<option></option>').val(section.id).text(section.name));
+                        });
+                    });
+                }
+            });
+        });
+    </script>
+} 
